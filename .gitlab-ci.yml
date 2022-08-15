@@ -1,0 +1,98 @@
+#-----------------------------------HEROKU CI/CD CODE-----------------------------------
+#image: maven:
+image: ubuntu:latest
+cache:
+  paths:
+    - .m2/repository/Trip_Management_System_Group_16/
+    - target/
+
+#before_script:
+#  - apt-get update
+#  - ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
+#  - apt-get --yes --force-yes install wget curl maven git
+
+stages:
+  - build
+  - test
+  - code_quality
+  - deploy
+
+build:
+  #image: maven:3-jdk-8
+  stage: build
+  tags:
+    - ugrad
+  script:
+    - mvn clean package -DskipTests=true
+    - ls
+  artifacts:
+    paths:
+      - target/*.jar
+  only:
+    refs:
+      - log_management
+      - metaData-feature-1
+      - main
+
+# test stage will compile the code and run all the unit tests present in the
+# test folder.
+test:
+  #image: maven:3-jdk-8
+  stage: test
+  tags:
+    - ugrad
+  script:
+    - mvn clean test
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - target/surefire-reports/TEST-*.xml
+        - target/failsafe-reports/TEST-*.xml
+  only:
+    refs:
+      - log_management
+      - metaData-feature-1
+      - main
+
+code_quality:
+  stage: code_quality
+  variables:
+    UPLOAD_QUALITY_REPORT: 'curl -X PUT -H "Authorization: Token $QSCORED_API_KEY" -H "repository-link: $CI_PROJECT_URL" + -H "username:bn489600@dal.ca" -H "Content-Type: mulitpart/form-data" --url "https://qscored.com/api/upload/file.xml?is_open_access=off&version=$CI_PIPELINE_IID&project_name=CSCI_5408_DPG_7" -F "file=@Designite_output/DesigniteAnalysis.xml"'
+  before_script:
+    - apt-get update
+    - ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
+    - apt-get --yes --force-yes install wget curl maven git
+  script:
+    - wget -O DesigniteJava.jar https://www.dropbox.com/s/mwizkj8uhplz4x3/DesigniteJava.jar?dl=1
+    - echo "/$CI_PROJECT_PATH"
+    - ls -lrth
+    #    - java -jar DesigniteJava.jar -i . -o Designite_output -f XML
+    - java -jar DesigniteJava.jar -ci -repo $CI_PROJECT_PATH -pat $PAT -host "git.cs.dal.ca"
+    - 'eval "$UPLOAD_QUALITY_REPORT"'
+  only:
+    refs:
+      - log_management
+      - metaData-feature-1
+      - main
+
+deploy:
+  stage: deploy
+  tags:
+    - ugrad
+  before_script:
+    - 'command -v ssh-agent >/dev/null || ( apt-get update -y && apt-get install openssh-client -y )'
+    - eval $(ssh-agent -s)
+    - echo "$DEPLOY_SSH_KEY" | tr -d '\r' | ssh-add -
+  script:
+    - pwd
+    - ls -lrth
+    - ls target/
+    - ls -lrth ~/.ssh
+    - echo "$CI_COMMIT_REF_NAME"
+    - zip -r ${CI_COMMIT_SHORT_SHA}.zip . -i target/*.jar
+    - ls -lrth ${CI_COMMIT_SHORT_SHA}.zip
+    - scp -r -o StrictHostKeyChecking=no ${CI_COMMIT_SHORT_SHA}.zip "${DEPLOY_USER}@${DEPLOY_HOST}:${PROD_DIR}/${CI_COMMIT_SHORT_SHA}.zip"
+  only:
+    - main
+    - log_management

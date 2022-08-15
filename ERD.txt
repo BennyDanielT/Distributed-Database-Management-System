@@ -1,0 +1,26 @@
+SCHEMA:	Students
+TABLES:	 manager, owner, employee, lmao 
+
+manager
+columnName, dataType, size, key, unique
+age, FLOAT, null, PRIMARY KEY, null
+name, TEXT, null, employee, null
+
+owner
+columnName, dataType, size, key, unique
+age, FLOAT, null, PRIMARY KEY, null
+name, TEXT, null, employee, True
+
+employee
+columnName, dataType, size, key, unique
+id, FLOAT, null, PRIMARY KEY, null
+idd, TEXT, null, null, null
+name, TEXT, null, null, True
+
+lmao
+columnName, dataType, size, key, unique
+id, TEXT, null, null, null
+
+CARDINALITY
+employee, manager.txt, name, one-to-many
+employee, owner.txt, name, one-to-one
