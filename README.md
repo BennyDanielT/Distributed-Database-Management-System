@@ -24,9 +24,9 @@ Project Description - A simple distributed database management system that opera
 
 ## Team Members:
 ```
-* Arsh
-* Benny Daniel
+* Arshdeep Singh
+* Benny Daniel Tharigopala
 * Jay Patel
-* Qurram
-* Trushita
+* Qurram Syed Zaheer
+* Trushita Maurya
 
